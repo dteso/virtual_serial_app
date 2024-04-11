@@ -1,0 +1,203 @@
+<!--  -->
+<div class="font-terminal container">
+  <div class="input-container mb-3">
+    <input *ngIf="!connected" [disabled]="!connected" [(ngModel)]="message" type="text" placeholder="">
+    <input *ngIf="connected" [(ngModel)]="message" type="text" placeholder="Message...">
+    <button [disabled]="!connected" class="button" (click)="send()">
+      <img *ngIf="connected && message.length" width="50" height="20" src="../../../../assets/arrow-right-white.apng">
+      <div *ngIf="connected && !message.length">Write something</div>
+    </button>
+  </div>
+  <div class="row">
+    <div class="col-lg-3 col-md-6 col-sm-6" style="border-radius: 8px; color: white; font-size: small; overflow-y: scroll;
+      height: 60vh;">
+      <div *ngIf="!connected && !refreshingPorts" class="nav-item dropdown p-2"
+        style="background-color: #222222; height: 4rem; border-radius: 5px; padding: 1rem; margin-bottom: 0.5rem;">
+        {{baudrate}}
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+          style="font-size: 16px;">
+          Baudrate
+        </a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" (click)="setBaudRateAsSelected(115200)">115200</a></li>
+          <li><a class="dropdown-item" (click)="setBaudRateAsSelected(9600)">9600</a></li>
+        </ul>
+      </div>
+      <button *ngIf="!connected && !refreshingPorts" class="w-100 btn btn-dark" (click)="refresh()">REFRESH</button>
+
+      <div *ngIf="refreshingPorts"
+        style="color: black; text-align: center; justify-content: center; display: grid; margin-top: 50%;">
+        <h6 class="p-2"> Checking usb ports... </h6>
+        <div class="loader-search">
+          <div class="cell d-0"></div>
+          <div class="cell d-1"></div>
+          <div class="cell d-2"></div>
+          <div class="cell d-1"></div>
+          <div class="cell d-2"></div>
+          <div class="cell d-2"></div>
+          <div class="cell d-3"></div>
+          <div class="cell d-3"></div>
+          <div class="cell d-4"></div>
+        </div>
+      </div>
+
+      <div *ngIf="_ports && _ports.length === 0 && !refreshingPorts" class="center">
+        <p style="color: red; padding: 2rem;">No USB device detected. Please connect a device to any usb port and then
+          press <u>REFRESH.</u> <br><br>
+          <strong>! NOTE:</strong> If device is connected verify that your usb cable supports data. Some usb cables
+          only
+          have wired power
+          connections.
+        </p>
+        <img width="250" height="250" src="../../../../assets/red-usb-250x250_b.apng" />
+      </div>
+      <div *ngIf="!refreshingPorts">
+        <div *ngFor="let port of (ports | async)" class="card mt-1">
+          <div *ngIf="!connected || (connected && port.connected)" class="fade-in">
+            <div class="card-body"
+              [ngStyle]="{'background-color': port.connected ? '#333333' : 'transparent', 'color': port.connected ? 'white' : 'black', 'border-bottom': port.connected ? '2px solid greenyellow' : 'transparent'}">
+              <div class="row">
+                <div class="col col-8">
+                  <h5 class="card-title">{{port.path}}</h5>
+                  <p class="card-text"><strong>MANUFACTURER:</strong> {{port.manufacturer}}</p>
+                </div>
+                <div *ngIf="port.connected" class="col col-4" style="text-align: right;">
+                  <img src="../../../../assets/CIRCLE-BLUE-GREEN.apng" width="50" height="50" />
+                  <p style="font-size: 8px; color: yellowgreen;">CONNECTED</p>
+                </div>
+              </div>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><strong>S/N:</strong> {{port.serialNumber}}</li>
+              <!-- <li class="list-group-item"><strong>pnp ID:</strong> {{port.pnpId}} </li> -->
+              <li class="list-group-item"><strong>Location Id:</strong> {{port.locationId}} </li>
+              <!-- <li class="list-group-item"><strong>Friendly name:</strong> {{port.friendlyName}}</li> -->
+              <li class="list-group-item"><strong>ESP model:</strong> {{port.device}}</li>
+              <li class="list-group-item"><strong>Vendor ID:</strong> {{port.vendorId}} </li>
+              <li class="list-group-item"><strong>Product ID:</strong> {{port.productId}} </li>
+              <!-- <li class="list-group-item"><strong>Connected:</strong> {{port.connected}} </li> -->
+            </ul>
+            <div class="card-body center">
+              <button class="button-dark" *ngIf="baudrate && !connected"
+                (click)="setPortAsSelected(port)">CONNECT</button>
+              <button class="button-danger" *ngIf="connected" style="margin: 0.5rem;"
+                (click)="disconnect()">DISCONNECT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pt-1 col-lg-6 col-md-6 col-sm-6 font-terminal" style="height: 60vh; overflow: auto; padding: 1.5rem;">
+      <!--  T E R M I N A L -->
+      <div *ngFor="let stream of (fullStream | async)" style="font-size: 14px;" class="fade-in">
+        <strong>{{ stream.date | date : 'HH:mm:ss' }}</strong> - {{ stream.data }}
+      </div>
+
+    </div>
+    <div class="pt-3 col-lg-3 col-md-3 col-sm-6"
+      style="border: solid 0.5px rgb(218, 217, 217); border-radius: 5px; color: black; background: -webkit-linear-gradient(-90deg, #222222 60%, rgb(215, 215, 225) 100%) !important; box-shadow: 1px 0px 0px rgb(218, 217, 217)">
+
+      <div class="row mb-5 p-3">
+        <div class="col-3 center">
+          <div class=" center mb-1" style="color: white; font-size: 12px;">Login</div>
+          <button class="btn btn-outline-secondary" (click)="showLogin()"><img width="30" height="30"
+              src="../../../../assets/avatar-gray-white.apng"></button>
+        </div>
+        <div class="col-3 center">
+          <div class="center mb-1" style="color: white; font-size: 12px;">Wifi</div>
+          <button class="btn btn-outline-secondary" (click)="showWifiForm()"><img width="30" height="30"
+              src="../../../../assets/wifi-black-white.apng"></button>
+        </div>
+        <div class="col-3 center">
+          <div class="center mb-1" style="color: white; font-size: 12px;">Commands</div>
+          <button class="btn btn-outline-secondary"><img width="30" height="30"
+              src="../../../../assets/cmd-black-white.apng"></button>
+        </div>
+        <div class="col-3 center">
+          <div class="center mb-1" style="color: white; font-size: 12px;">Setup</div>
+          <button class="btn btn-outline-secondary" (click)="showFirmware()"><img width="30" height="30"
+              src="../../../../assets/pen-black-white.apng"></button>
+        </div>
+      </div>
+
+      <!-- L O G I N -->
+      <div *ngIf="selectedForm === 'login'" class="p-3">
+        <form class="form-signin">
+          <div class="form-floating p-1">
+            <input type="email" class="form-control mb-3" id="floatingInput" placeholder="name@example.com">
+            <label for="floatingInput">Email address</label>
+          </div>
+          <div class="form-floating p-1">
+            <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
+            <label for="floatingPassword">Password</label>
+          </div>
+          <div class="form-check text-start my-3">
+            <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
+            <label class="form-check-label" for="flexCheckDefault" style="color: aliceblue;">
+              Remember me
+            </label>
+          </div>
+          <button class="button-info w-100 py-2" type="submit">SIGN IN</button>
+          <p class="mt-5 mb-3 text-body-secondary">&copy; 2017–2024</p>
+        </form>
+      </div>
+
+      <!-- W I F I -->
+      <div *ngIf="selectedForm === 'wifi-connect-form'" class="p-3">
+        <form class="form-signin">
+          <div class="form-floating p-1">
+            <input type="email" class="form-control mb-3" id="floatingInput" placeholder="MiFibra-XXXX">
+            <label for="floatingInput">SSID</label>
+          </div>
+          <div class="form-floating p-1">
+            <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
+            <label for="floatingPassword">Pass</label>
+          </div>
+          <div class="form-check text-start my-3">
+            <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
+            <label class="form-check-label" for="flexCheckDefault" style="color: aliceblue;">
+              Remember wifi data
+            </label>
+          </div>
+          <button class="button-info w-100 py-2" type="submit">CONNECT</button>
+          <p class="mt-5 mb-3 text-body-secondary">&copy; 2017–2024</p>
+        </form>
+      </div>
+
+      <!-- INSTALL FIRMWARE -->
+      <div *ngIf="selectedForm === 'firmware'" style="color: white; text-align: center;">
+        <div *ngIf="connected && !installingFirmware && !firmwareInstalled" style="width: 100%; margin-bottom: 1rem;">
+          <h6>
+            BOARD
+          </h6>
+          <p>
+            {{port.device}}
+          </p>
+        </div>
+        <div *ngIf="!connected && !installingFirmware" style="text-align: center; color: white;">
+          Needs to be connected to an ESP device.
+        </div>
+        <button *ngIf="connected && !installingFirmware && !firmwareInstalled" class="button-info"
+          style="margin: 0.5rem;" (click)="installFirmware()">INSTALL SYNAPPSE</button>
+        <!-- <div *ngIf="installingFirmware" class="mb-5"> Installing firmware, please wait... </div> -->
+        <div *ngIf="installingFirmware"
+          style="color: white; text-align: center; justify-content: center; display: grid;">
+          <div class="loader JS_on">
+            <span class="binary"></span>
+            <span class="binary"></span>
+            <div class="getting-there p-3">FLASHING BOARD</div>
+          </div>
+        </div>
+        <div *ngIf="firmwareInstalled" style="text-align: center; margin-bottom: 5rem; color: rgb(17, 243, 168);">
+          <h6> Firmware successfully installed !</h6>
+          <img src="../../../../assets/ok.apng" width="80" height="80" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- <div>
+    <button class="w-100 mt-2 button-dark" (click)="back()">Back</button>
+  </div> -->
+
+</div>
